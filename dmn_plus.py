@@ -306,12 +306,12 @@ class DMN_PLUS(object):
          
         # input fusion module
         with tf.variable_scope("question", initializer=_xavier_weight_init()):
-            print '==> get question representation'
+            print('==> get question representation')
             q_vec = self.get_question_representation(embeddings)
          
 
         with tf.variable_scope("input", initializer=_xavier_weight_init()):
-            print '==> get input representation'
+            print('==> get input representation')
             fact_vecs = self.get_input_representation(embeddings)
 
         # keep track of attentions for possible strong supervision
@@ -319,14 +319,14 @@ class DMN_PLUS(object):
 
         # memory module
         with tf.variable_scope("memory", initializer=_xavier_weight_init()):
-            print '==> build episodic memory'
+            print('==> build episodic memory')
 
             # generate n_hops episodes
             prev_memory = q_vec
 
             for i in range(self.config.num_hops):
                 # get a new episode
-                print '==> generating episode', i
+                print('==> generating episode', i)
                 episode = self.generate_episode(prev_memory, q_vec, fact_vecs)
 
                 # untied weights for memory update
@@ -360,7 +360,7 @@ class DMN_PLUS(object):
         qp, ip, ql, il, im, a, r = qp[p], ip[p], ql[p], il[p], im[p], a[p], r[p] 
 
         for step in range(total_steps):
-            index = range(step*config.batch_size,(step+1)*config.batch_size)
+            index = list(range(step*config.batch_size,(step+1)*config.batch_size))
             feed = {self.question_placeholder: qp[index],
                   self.input_placeholder: ip[index],
                   self.question_len_placeholder: ql[index],
