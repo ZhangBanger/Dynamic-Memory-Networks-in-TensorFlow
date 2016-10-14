@@ -186,7 +186,6 @@ class DMN_PLUS(object):
         train_op = opt.apply_gradients(gvs)
         return train_op
   
-
     def get_question_representation(self, embeddings):
         """Get question vectors via embedding and GRU"""
         questions = tf.nn.embedding_lookup(embeddings, self.question_placeholder)
@@ -279,7 +278,7 @@ class DMN_PLUS(object):
 
         # extract gru outputs at proper index according to input_lens
         gru_outputs = tf.pack(gru_outputs)
-        gru_outputs = tf.transpose(gru_outputs, perm=[1,0,2])
+        gru_outputs = tf.transpose(gru_outputs, perm=[1, 0, 2])
         episode = _last_relevant(gru_outputs, self.input_len_placeholder)
 
         return episode
@@ -295,7 +294,6 @@ class DMN_PLUS(object):
 
             output = tf.matmul(tf.concat(1, [rnn_output, q_vec]), U) + b_p
 
-
             return output
 
     def inference(self):
@@ -309,7 +307,6 @@ class DMN_PLUS(object):
             print('==> get question representation')
             q_vec = self.get_question_representation(embeddings)
          
-
         with tf.variable_scope("input", initializer=_xavier_weight_init()):
             print('==> get input representation')
             fact_vecs = self.get_input_representation(embeddings)
