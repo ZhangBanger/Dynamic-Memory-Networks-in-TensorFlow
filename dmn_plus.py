@@ -330,20 +330,46 @@ class DMN_PLUS(object):
         with tf.variable_scope("memory", initializer=_xavier_weight_init()):
             print('==> build episodic memory')
 
+            # Weights are now tied
+            Wt = tf.get_variable("W_t",
+                                 (2 * self.config.hidden_size + self.config.embed_size, self.config.hidden_size))
+            bt = tf.get_variable("bias_t", (self.config.hidden_size,))
+
             # generate n_hops episodes
             prev_memory = q_vec
 
-            for i in range(self.config.num_hops):
+            episode = self.generate_episode(prev_memory, q_vec, fact_vecs)
+
+            # Special stopping 'gate' that operates non-differential control flow
+            cutoff = tf.constant(0.0, dtype=tf.float32)
+            with tf.variable_scope("stopping", initializer=_xavier_weight_init()):
+                W = tf.get_variable("W",
+                                    (2 * self.config.hidden_size + self.config.embed_size, self.config.hidden_size))
+                b = tf.get_variable("bias", (self.config.hidden_size,))
+
+            def loop_cond(prev_memory, episode, q_vec, i):
+                # Gate for stopping
+                print('==> testing loop condition for whether tanh greater than 0')
+                stop_gate = tf.reduce_sum(tf.nn.tanh(tf.matmul(tf.concat(1, [prev_memory, episode, q_vec]), W) + b))
+                return tf.logical_and(tf.less(stop_gate, cutoff), tf.less(i, self.config.num_hops))
+
+            def attention_hop(prev_memory, _, q_vec, hop_number):
                 # get a new episode
                 print('==> generating episode', )
                 episode = self.generate_episode(prev_memory, q_vec, fact_vecs)
 
-                # untied weights for memory update
-                Wt = tf.get_variable("W_t"+ str(i), (2*self.config.hidden_size+self.config.embed_size, self.config.hidden_size))
-                bt = tf.get_variable("bias_t"+ str(i), (self.config.hidden_size,))
-
                 # update memory with Relu
                 prev_memory = tf.nn.relu(tf.matmul(tf.concat(1, [prev_memory, episode, q_vec]), Wt) + bt)
+
+                hop_number = tf.add(hop_number, 1)
+
+                return prev_memory, episode, q_vec, hop_number
+
+            # Guarantee 1 run first - swear this was not training at all without forcing an initial hop
+            prev_memory, episode, q_vec, i = attention_hop(prev_memory, episode, q_vec, 0)
+
+            tf.while_loop(lambda a, b, c, i: loop_cond(a, b, c, i), lambda a, b, c, i: attention_hop(a, b, c, i),
+                          (prev_memory, episode, q_vec, i), parallel_iterations=0)
 
             output = prev_memory
 
