@@ -37,10 +37,10 @@ class Config(object):
 
     drop_grus = False
 
-    anneal_threshold = 1000
-    anneal_by = 1.5
+    anneal_threshold = 1.5
+    anneal_by = 1000
 
-    num_hops = 3
+    num_hops = 10
     num_attention_features = 4
 
     max_allowed_inputs = 130
